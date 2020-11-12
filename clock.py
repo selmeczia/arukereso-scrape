@@ -7,5 +7,5 @@ sched = BlockingScheduler()
 
 # Schedule job_function to be called every two hours
 sched.add_job(scrape_products, 'interval', minutes=2)
-
+print("clock started :)")
 sched.start()
