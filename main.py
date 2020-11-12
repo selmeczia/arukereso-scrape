@@ -67,4 +67,7 @@ def scrape_products():
             df = imported.append(df)
 
         df.to_csv(path, index = False, header= True)
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S")
+        print("Run succesfull at " + current_time )
 
