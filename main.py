@@ -18,7 +18,7 @@ def scrape_products():
     #link = "https://www.arukereso.hu/jatekkonzol-c3154/sony/playstation-5-ps5-p588030129/"
     #csv_name = "arukereso_PS5.csv"
 
-        path = "./output/" + name
+        path =  name
 
         source = requests.get(link).text
         soup = BeautifulSoup(source, 'lxml')
