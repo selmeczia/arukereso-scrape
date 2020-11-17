@@ -4,21 +4,22 @@ import requests
 from datetime import datetime
 import pandas as pd
 import os
-import time
-#from apscheduler.scheduler import Scheduler
+import config as cfg
 
-products = pd.read_csv("products.csv")
+
 
 def scrape_products():
+    now = datetime.now()
+    current_time = now.strftime("%H:%M:%S")
+    print("Scraping items from products.csv at " + current_time)
+    print("Next run will be approximately " + str(cfg.minutes) + " minutes from now")
+    products = pd.read_csv(cfg.products_path)
 
     for index, row in products.iterrows():
         name = row.tolist()[0] + ".csv"
         link = row.tolist()[1]
 
-    #link = "https://www.arukereso.hu/jatekkonzol-c3154/sony/playstation-5-ps5-p588030129/"
-    #csv_name = "arukereso_PS5.csv"
-
-        path =  name
+        path = "./output/ " + name
 
         source = requests.get(link).text
         soup = BeautifulSoup(source, 'lxml')
@@ -37,7 +38,7 @@ def scrape_products():
             link = item.find('a', class_='jumplink-overlay initial')
             item_link = link['href']
 
-            price_list.append(item_price)
+            price_list.append(int(item_price))
             store_list.append(store_name)
             link_list.append(item_link)
 
@@ -45,14 +46,45 @@ def scrape_products():
         df = pd.DataFrame(list(zip(price_list, store_list, link_list)), columns=['Price',"Store", "Link"])
         df["Min price"] = min_price
         df["Date"] = datetime.now().strftime("%d/%m/%Y %H:%M")
-
-
         df = df[["Date", "Price", "Min price", "Store", "Link"]]
 
 
-        if (os.path.isfile(path)):
 
+        df['Latest_run'] = ""
+
+        #if not first run:
+        if (os.path.isfile(path)):
+            df['Latest_run'] = 1
             imported = pd.read_csv(path)
+            imported_without_latest = imported[imported['Latest_run'] == 0]
+            imported_only_latest = imported[imported['Latest_run'] == 1].copy()
+            # https://www.dataquest.io/blog/settingwithcopywarning/
+            imported_only_latest['Latest_run'] = 0
+            latest_and_current = imported_only_latest.append(df)
+            removed_duplicates = latest_and_current.drop_duplicates(subset=['Store', 'Price'], keep='last')
+
+            output = imported_without_latest.append(removed_duplicates)
+            df = output
+
+        else:
+            df['Latest_run'] = 0
+
+        #latest_run_df = imported[imported.Latest_run == 1]
+
+            #delete the same rows from imported as the newly added
+            # i = 0
+            # for store in imported.Store.unique():
+            #     imported_value = imported.loc[imported['Store'] == store, 'Price'].tolist()[0]
+            #     existing_value = df.loc[df['Store'] == store, 'Price'].tolist()[0]
+            #     if (imported_value == existing_value):
+            #         imported = imported.loc[imported['Store'] != store]
+            #     i =+ 1
+            # #    if imported.loc[imported['Latest_run'] == 1, 'Price'] == df.loc[['Price']]:
+            # #        print("helo")
+            #
+            # df[['Latest_run']] = 1
+
+
 
             # existing_min_price = imported.iloc[-1, 2]
             # if (int(min_price) < int(existing_min_price)):
@@ -64,10 +96,8 @@ def scrape_products():
             #     row = df.loc[df['Price'] == min_price]
             #     message = "Oh no! The lowest price has changed to " + str(min_price) + " Ft inestead of " + str(existing_min_price) + " Ft"
 
-            df = imported.append(df)
+
+        #df = df.drop_duplicates(subset=['Store', 'Price'], keep='last')
 
         df.to_csv(path, index = False, header= True)
-        now = datetime.now()
-        current_time = now.strftime("%H:%M:%S")
-        print("Run succesfull at " + current_time )
 
