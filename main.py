@@ -7,7 +7,6 @@ import os
 import config as cfg
 
 
-
 def scrape_products():
     now = datetime.now()
     current_time = now.strftime("%H:%M:%S")
@@ -28,6 +27,9 @@ def scrape_products():
         store_list = []
         link_list = []
 
+        # TODO: if link does not have any prices, skip the code
+
+
         for item in soup.find_all('div', class_='optoffer device-desktop'):
 
             item_price_raw = item.find('div', class_='row-price').text
@@ -43,17 +45,15 @@ def scrape_products():
             link_list.append(item_link)
 
         min_price = min(price_list)
-        df = pd.DataFrame(list(zip(price_list, store_list, link_list)), columns=['Price',"Store", "Link"])
+        df = pd.DataFrame(list(zip(price_list, store_list, link_list)), columns=['Price', "Store", "Link"])
         df["Min price"] = min_price
         df["Date"] = datetime.now().strftime("%d/%m/%Y %H:%M")
         df = df[["Date", "Price", "Min price", "Store", "Link"]]
 
-
-
         df['Latest_run'] = ""
 
-        #if not first run:
-        if (os.path.isfile(path)):
+        # if not first run:
+        if os.path.isfile(path):
             df['Latest_run'] = 1
             imported = pd.read_csv(path)
             imported_without_latest = imported[imported['Latest_run'] == 0]
@@ -69,9 +69,9 @@ def scrape_products():
         else:
             df['Latest_run'] = 0
 
-        #latest_run_df = imported[imported.Latest_run == 1]
+        # latest_run_df = imported[imported.Latest_run == 1]
 
-            #delete the same rows from imported as the newly added
+            # delete the same rows from imported as the newly added
             # i = 0
             # for store in imported.Store.unique():
             #     imported_value = imported.loc[imported['Store'] == store, 'Price'].tolist()[0]
@@ -84,8 +84,6 @@ def scrape_products():
             #
             # df[['Latest_run']] = 1
 
-
-
             # existing_min_price = imported.iloc[-1, 2]
             # if (int(min_price) < int(existing_min_price)):
             #     row = df.loc[df['Price'] == min_price]
@@ -96,8 +94,6 @@ def scrape_products():
             #     row = df.loc[df['Price'] == min_price]
             #     message = "Oh no! The lowest price has changed to " + str(min_price) + " Ft inestead of " + str(existing_min_price) + " Ft"
 
+        # df = df.drop_duplicates(subset=['Store', 'Price'], keep='last')
 
-        #df = df.drop_duplicates(subset=['Store', 'Price'], keep='last')
-
-        df.to_csv(path, index = False, header= True)
-
+        df.to_csv(path, index=False, header=True)
